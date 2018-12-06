@@ -1,0 +1,167 @@
+class AutoShrinkingText extends React.Component {
+  state = {
+    scale: 1
+  }
+  componentDidUpdate() {
+    const node = this.node
+    
+    const { offsetWidth } = node
+    const parentWidth = node.offsetParent.offsetWidth
+    
+    const scale = offsetWidth / parentWidth
+    
+    if (scale > 1) {
+      this.setState({
+        scale: 1 / scale
+      })
+    } else if (this.state.scale !== 1){
+      this.setState({
+        scale: 1
+      })
+    }
+  }
+  render(){
+    const {scale} = this.state
+    return (<div 
+             {...this.props} 
+             style = {{ transform: 'scale(${scale},${scale})'}}
+             ref = {node => this.node = node}
+             />
+      )
+  }
+}
+
+
+class Calculator extends React.Component {
+  state = {
+    value: null,
+    displayValue: "0",
+    waitingForOperand: false,
+    operator: null
+  }
+
+inputDigit(digit){
+  const {displayValue, waitingForOperand} = this.state
+  
+  if(waitingForOperand){
+    this.setState({
+      displayValue: String(digit),
+      waitingForOperand: false
+    })
+  }else{
+    this.setState({
+      displayValue: displayValue === '0' ? String(digit) : displayValue + digit
+    })
+  }
+}
+
+inputDot(){
+  const {displayValue, waitingForOperand} = this.state
+  if(waitingForOperand) {
+    this.setState({
+      displayValue: '.',
+      waitingForOperand: false
+    })
+  }else{
+  if(displayValue.indexOf(".")=== -1) {
+        this.setState({
+          displayValue: displayValue + ".",
+          waitingForOperand: false
+      })
+    }
+  }
+}
+
+clearDisplay(){
+  this.setState({
+    value: null,
+    displayValue: '0',
+    waitingForOperand: false,
+    operator: null
+  })
+}
+
+performOperation(nextOperator){
+  const {displayValue, operator, value, waitingForOperand} = this.state
+  const nextVal = parseFloat(displayValue)
+  
+  const operations = {
+    '/': (preVal, nextVal) => preVal / nextVal,
+    '*': (preVal, nextVal) => preVal * nextVal,
+    '-': (preVal, nextVal) => preVal - nextVal,
+    '+': (preVal, nextVal) => preVal + nextVal,
+    '=': (preVal, nextVal) => nextVal
+  }
+  
+  if (value == null) {
+    this.setState({
+      value: nextVal
+    })
+  } else if (operator && waitingForOperand) {
+    const currVal = value || 0
+    const compVal = operations[operator](currVal, nextVal)
+    
+    this.setState({
+      value: currVal,
+      displayValue: String(currVal)
+    })
+  } else if (operator){
+    const currVal = value || 0
+    const compVal = operations[operator](currVal, nextVal)
+    
+    this.setState({
+      value: compVal,
+      displayValue: String(compVal)
+    })
+  }
+  
+  
+  this.setState({
+    waitingForOperand: true,
+    operator: nextOperator
+  })
+}
+  
+  render(){
+    const {displayValue} = this.state
+    return (
+      <div className="calculator">
+        <pre>{JSON.stringify(this.state, null, 2)}</pre>
+        <AutoShrinkingText className="calculator-display" id="display">{displayValue}</AutoShrinkingText>
+        <div className = "calculator-keypad">
+          <div className="input-keys">
+            <div className="function-keys">
+              <button className="calculator-key key-clear" id="clear" onClick={() => this.clearDisplay()}>AC</button>
+              <button className="calculator-key key-clearOne" id="clearOne">C_</button>
+              <button className="calculator-key key-percent">%</button>
+            </div>
+            <div className="digit-keys">
+              <button className="calculator-key key-0" id="zero" onClick={() => this.inputDigit(0)}>0</button>
+              <button className="calculator-key key-dot" id="decimal" onClick={() => this.inputDot()}>.</button>
+              <button className="calculator-key key-1" id="one" onClick={() => this.inputDigit(1)}>1</button>
+              <button className="calculator-key key-2" id="two" onClick={() => this.inputDigit(2)}>2</button>
+              <button className="calculator-key key-3" id="three" onClick={() => this.inputDigit(3)}>3</button>
+              <button className="calculator-key key-4" id="four" onClick={() => this.inputDigit(4)}>4</button>
+              <button className="calculator-key key-5" id="five" onClick={() => this.inputDigit(5)}>5</button>
+              <button className="calculator-key key-6" id="six" onClick={() => this.inputDigit(6)}>6</button>
+              <button className="calculator-key key-7" id="seven" onClick={() => this.inputDigit(7)}>7</button>
+              <button className="calculator-key key-8" id="eight" onClick={() => this.inputDigit(8)}>8</button>
+              <button className="calculator-key key-9" id="nine" onClick={() => this.inputDigit(9)}>9</button>
+            </div>
+          </div>
+          <div className="operator-keys">
+            <button className="calculator-key key-div" id="divide" onClick={() => this.performOperation("/")}>/</button>
+            <button className="calculator-key key-mult" id="multiply" onClick={() => this.performOperation("*")}>*</button>
+            <button className="calculator-key key-sub"  id="subtract" onClick={() => this.performOperation("-")}>-</button>
+            <button className="calculator-key key-add" id="add" onClick={() => this.performOperation("+")}>+</button>
+            <button className="calculator-key key-equals" id="equals" onClick={() => this.performOperation("=")}>=</button>
+          </div>
+        </div>
+        </div>
+    );
+  }
+}
+
+ReactDOM.render(
+      <Calculator /> , document.getElementById("app")
+);
